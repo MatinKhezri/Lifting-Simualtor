@@ -1,0 +1,34 @@
+clc
+
+load('Mohseni Static 3D Coordinates Prediction Model.mat')
+
+% راهنمای ورودی های شبکه عصبی
+% 1-x(mm)
+% 2-y(mm)
+% 3-z(mm)
+% 4-LT(1-stand,2-stoop,3-semi,4-squat)
+% 5-HT(1-onehnd,2-twohand)
+% 6-weight(kg)
+% 7-height(mm)
+SH_Input=[200 200 1400 1 1 80 1800];
+
+Input = SH_Input; % Input with n number of observations must be in n*7 size.
+
+for i = 1:size(Input,2)
+    
+    for j = 1:size(Input,1)
+        
+        N_Input(j,i) = (Input(j,i) - Min_In(1,i))/(Max_In(1,i) - Min_In(1,i));
+        
+    end
+    
+end
+
+Head = net_Head(N_Input');
+BP = net_BP(N_Input');
+Arms = net_Arms(N_Input');
+Legs = net_Legs(N_Input');
+
+clear Input i j N_Input
+
+w=num2cell(BP)'

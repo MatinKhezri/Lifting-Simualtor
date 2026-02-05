@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <title>صفحه اصلی</title>
+</head>
+<body style="font-family: sans-serif; text-align: center; margin-top: 100px;">
+    <h2>سلام 🌷</h2>
+    <p>خوش اومدی!</p>
+    <form action="/logout/" method="post">
+        {% csrf_token %}
+        <button type="submit">خروج از حساب</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | Lifting Simulation</title>
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+</head>
+<body>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <h2>Login 🔐</h2>
+    {% if form.errors %}
+      <div class="error-msg">Invalid username or password</div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="id_username">Username</label>
+      <input id="id_username" name="username" required>
+
+      <label for="id_password">Password</label>
+      <input id="id_password" type="password" name="password" required>
+
+      <button class="btn primary mt-12" type="submit">Enter</button>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

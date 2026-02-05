@@ -1,0 +1,71 @@
+html { direction: ltr; }
+
+:root{
+  --radius: 18px;
+  --shadow: 0 10px 25px rgba(0,0,0,.12);
+}
+
+*{ box-sizing: border-box; }
+body{ 
+    margin:0; font-family: Vazirmatn, Segoe UI, sans-serif; background:#f6f7fb; color:#111; 
+    direction: ltr;
+    text-align: left;
+
+}
+
+.topbar{
+  height:56px; display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px; background:#fff; box-shadow: var(--shadow); position: sticky; top:0; z-index: 5;
+}
+.topbar .brand{ font-weight:800; }
+
+.grid{
+  display:grid;
+  grid-template-columns: 320px 1fr;
+  grid-template-rows: 52vh 48vh;
+  gap: 20px;
+  padding: 20px;
+}
+
+.sidebar{
+  grid-row: 1 / span 2;
+  background:#fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding:16px; overflow:auto;
+}
+.sidebar h3{ margin:8px 0 16px; }
+.sidebar label{ display:block; font-size:.9rem; margin-top:10px; }
+.sidebar input, .sidebar select{
+  width:100%; padding:10px; border-radius:10px; border:1px solid #dcdde3; background:#fafbff;
+}
+.sidebar .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px; }
+.sidebar .row3 label{ grid-column: 1 / -1; }
+.sidebar .disabled{ opacity:.6; }
+
+.btn{
+  border:1px solid #d1d5db; background:#fff; padding:8px 14px; border-radius:10px; cursor:pointer;
+}
+.btn-ghost{ background:transparent; }
+.primary{ background:#4a90e2; color:#fff; border:none; margin-top:14px; }
+
+.preview{
+  background:#fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding:12px; display:flex; flex-direction:column; overflow:hidden;
+}
+.preview-header{ display:flex; align-items:center; justify-content:space-between; padding:0 4px 8px; }
+#previewCanvas{ flex:1; width:100%; height:100%; background: radial-gradient(ellipse at center, #f9fafb, #eef2f7); border-radius:12px; }
+.preview-hint{ text-align:center; font-size:.85rem; padding-top:6px; color:#6b7280; }
+
+.charts{
+  display:grid; grid-template-columns: 1fr 1fr; gap:20px;
+}
+.chart-card{
+  background:#fff; border-radius: var(--radius); box-shadow: var(--shadow);
+  padding:12px; display:flex; flex-direction:column; overflow:hidden;
+}
+.chart-title{ font-weight:700; margin:4px 6px 10px; }
+.chart-card canvas{ width:100%; height: 260px; }
+
+@media (max-width: 1100px){
+  .grid{ grid-template-columns: 1fr; grid-template-rows: auto auto auto; }
+  .sidebar{ grid-row: auto; }
+}

@@ -1,0 +1,7 @@
+Django>=5.1
+gunicorn
+numpy
+scipy
+pandas
+scikit-learn
+openpyxl

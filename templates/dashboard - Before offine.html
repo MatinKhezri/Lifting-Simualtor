@@ -1,0 +1,1566 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Lifting Simulation Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#02040a;
+      --bg1:#050a18;
+
+      --panelA: rgba(12, 24, 48, 0.62);
+      --panelB: rgba(6, 12, 26, 0.48);
+
+      --stroke: rgba(120, 190, 255, 0.18);
+      --stroke2: rgba(255,255,255,0.07);
+
+      --text: rgba(235, 244, 255, 0.92);
+      --muted: rgba(235, 244, 255, 0.62);
+
+      --accent: #4fd1ff;
+      --accent2:#2b73ff;
+
+      --good:#2de2a6;
+      --danger:#ff4d4d;
+
+      --r: 16px;
+      --shadow: 0 18px 60px rgba(0,0,0,0.55);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      overflow:auto;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(1200px 700px at 25% -10%, rgba(79,209,255,0.18), transparent 60%),
+        radial-gradient(900px 600px at 70% 30%, rgba(43,115,255,0.20), transparent 60%),
+        radial-gradient(900px 700px at 80% 110%, rgba(45,226,166,0.10), transparent 60%),
+        linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 35%, var(--bg0) 100%);
+    }
+    /* Stars layer */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background-image:
+        radial-gradient(rgba(255,255,255,0.13) 1px, transparent 1px),
+        radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+        radial-gradient(rgba(255,255,255,0.06) 2px, transparent 2px);
+      background-size: 160px 160px, 260px 260px, 820px 820px;
+      background-position: 0 0, 40px 60px, 120px 180px;
+      opacity:0.55;
+      filter: blur(0.2px);
+    }
+    /* vignette */
+    body::after{
+      content:"";
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background: radial-gradient(1200px 800px at 50% 30%, transparent 55%, rgba(0,0,0,0.55) 100%);
+      opacity:.85;
+    }
+
+    /* ---------- Shared panel style ---------- */
+    .panel{
+      position:relative;
+      background: linear-gradient(180deg, var(--panelA) 0%, var(--panelB) 100%);
+      border: 1px solid var(--stroke);
+      border-radius: var(--r);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow:hidden;
+    }
+    .panel::before{
+      content:"";
+      position:absolute;
+      left:0; right:0; top:0;
+      height:2px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(79,209,255,0.85) 35%,
+        rgba(43,115,255,0.85) 65%,
+        transparent 100%);
+      opacity:0.55;
+    }
+    .panel::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      box-shadow:
+        inset 0 0 0 1px rgba(255,255,255,0.06),
+        inset 0 0 40px rgba(79,209,255,0.08);
+    }
+
+    .panel-head{
+      padding: 16px 16px 10px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .panel-head h2{
+      margin:0;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: .2px;
+    }
+    .divider{
+      height:1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.10), transparent);
+      margin: 14px 16px;
+      opacity:.9;
+    }
+
+    /* ---------- Topbar ---------- */
+    header.topbar{
+      margin: 14px 14px 0;
+      padding: 14px 16px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      border-radius: 18px;
+      z-index:5;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 220px;
+    }
+    .brand__icon{
+      width:34px;height:34px;
+      border-radius: 12px;
+      border:1px solid rgba(120,190,255,0.22);
+      background: rgba(0,0,0,0.25);
+      display:grid;
+      place-items:center;
+      box-shadow: 0 0 0 3px rgba(79,209,255,0.10);
+    }
+
+    .brand-logo{
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      filter: drop-shadow(0 0 12px rgba(79,209,255,0.35));
+    }
+
+    .brand__title{
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: .2px;
+      white-space:nowrap;
+    }
+
+    .btn{
+      border:none;
+      background: transparent;
+      color: var(--text);
+      font-weight: 600;
+      cursor:pointer;
+    }
+    .btn-ghost{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(120,190,255,0.22);
+      background: rgba(0,0,0,0.22);
+      text-decoration:none;
+      transition: .18s ease;
+    }
+    .btn-ghost:hover{
+      background: rgba(0,0,0,0.34);
+      box-shadow: 0 0 0 3px rgba(79,209,255,0.14);
+      transform: translateY(-1px);
+    }
+    .btn-ghost .dot{
+      width:8px;height:8px;border-radius: 2px;
+      background: var(--accent);
+      box-shadow: 0 0 16px rgba(79,209,255,0.65);
+    }
+
+    /* ---------- Main grid (مثل عکس: 3 ستون) ---------- */
+    main.grid{
+      position:relative;
+      z-index:2;
+      padding: 14px;
+
+    /* قبلی: height: calc(100vh - 92px); */
+      height: auto;
+      min-height: calc(100vh - 92px);
+
+      display:grid;
+      grid-template-columns: minmax(450px, 480px) minmax(520px, 1fr) minmax(360px, 520px);
+
+  /* قبلی خیلی کوچک می‌شد */
+      grid-template-rows: minmax(660px, 70vh) minmax(560px, auto);
+      gap: 14px;
+      align-content: start;
+    }
+
+    aside.sidebar{ grid-column:1; grid-row:1 / span 2; overflow:auto; }
+    #panel-stats{ grid-column:2; grid-row:1; display:flex; flex-direction:column; }
+    #panel-viewer{ grid-column:3; grid-row:1; display:flex; flex-direction:column; }
+/* --- Bottom row layout: Bar wider than Export (sum width ثابت) --- */
+    .bottom-row{
+    grid-column: 2 / 4;   /* کل عرض ستون 2 و 3 */
+    grid-row: 2;
+    display: grid;
+    gap: 14px;
+    grid-template-columns: 1.7fr 1fr;  /* قابل تغییر */
+    align-items: stretch;
+}
+
+    /* Responsive */
+    @media (max-width: 1280px){
+      body{ overflow:auto; }
+      main.grid{
+        height:auto;
+        grid-template-columns: minmax(320px, 420px) 1fr;
+        grid-template-rows: auto auto auto auto;
+      }
+      aside.sidebar{ grid-column:1; grid-row:1 / span 4; }
+      #panel-stats{ grid-column:2; grid-row:1; }
+      #panel-viewer{ grid-column:2; grid-row:2; }
+      #panel-bar{ grid-column:2; grid-row:3; }
+      #panel-export{ grid-column:2; grid-row:4; }
+      .bottom-row{
+      grid-column: auto;
+      grid-row: auto;
+      grid-template-columns: 1fr; /* موبایل: زیر هم */
+      }
+    }
+    @media (max-width: 900px){
+      main.grid{
+        grid-template-columns: 1fr;
+        grid-template-rows: auto;
+      }
+      aside.sidebar, #panel-stats, #panel-viewer, #panel-bar, #panel-export{
+        grid-column:auto; grid-row:auto;
+      }
+      .bottom-row{
+      grid-column: auto;
+      grid-row: auto;
+      grid-template-columns: 1fr; /* موبایل: زیر هم */
+      }
+    }
+
+    /* ---------- Form controls ---------- */
+    form#simForm{ padding: 0 16px 16px; }
+    label{
+      display:block;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      letter-spacing: .2px;
+    }
+    input, select{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(120,190,255,0.18);
+      background: rgba(0,0,0,0.26);
+      color: var(--text);
+      outline:none;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.25);
+      transition: .16s ease;
+    }
+    input::placeholder{ color: rgba(235,244,255,0.35); }
+    input:focus, select:focus{
+      border-color: rgba(79,209,255,0.55);
+      box-shadow: 0 0 0 3px rgba(79,209,255,0.14);
+    }
+    input.is-disabled{
+      opacity: .55;
+      cursor: not-allowed;
+    }
+    select{
+      appearance:none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(235,244,255,0.75) 50%),
+        linear-gradient(135deg, rgba(235,244,255,0.75) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 3px),
+        calc(100% - 12px) calc(50% - 3px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat:no-repeat;
+      padding-right: 34px;
+    }
+          /* --- Fix: native dropdown (option list) colors --- */
+    select{
+      color-scheme: dark; /* به مرورگر میگه کنترل‌های فرم رو دارک رندر کن */
+    }
+
+    select option,
+    select optgroup{
+      background-color: #0b1224;          /* پس‌زمینه لیست */
+      color: rgba(235,244,255,0.92);      /* رنگ متن */
+    }
+
+    select option:disabled{
+      color: rgba(235,244,255,0.35);
+    }
+
+    /* ✅ Dark dropdown list (options) */
+    select, input, textarea {
+      color-scheme: dark; /* مهم: کنترل‌های native رو dark می‌کنه */
+    }
+
+    select option,
+    select optgroup {
+      background-color: #0b1020;   /* بک‌گراند لیست */
+      color: rgba(235,244,255,0.92);
+    }
+
+/* انتخاب‌شده (همه مرورگرها دقیق اعمال نمی‌کنن ولی بد نیست) */
+    select option:checked {
+      background-color: rgba(79,209,255,0.25);
+    }
+
+    .row3{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .row3 > label{ grid-column: 1 / -1; margin-top: 0; }
+
+    .field-hint{ opacity:.65; margin-left: 6px; font-size: 11px; }
+
+    #errorBox{
+      margin-top: 12px;
+      color: rgba(255,255,255,0.92);
+      background: rgba(255, 77, 77, 0.16);
+      border: 1px solid rgba(255, 77, 77, 0.35);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display:none;
+    }
+
+    .btn.primary{
+      margin-top: 14px;
+      width:100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(79,209,255,0.30);
+      background: linear-gradient(90deg, rgba(43,115,255,0.92), rgba(79,209,255,0.92));
+      color: rgba(0,0,0,0.85);
+      font-weight: 800;
+      letter-spacing: .9px;
+      text-transform: uppercase;
+      box-shadow: 0 12px 30px rgba(43,115,255,0.20), 0 0 20px rgba(79,209,255,0.16);
+      transition: .16s ease;
+    }
+    .btn.primary:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      cursor:pointer;
+    }
+
+    /* ---------- Sidebar Outputs ---------- */
+    h3{ margin:0; }
+    #outputsBox{
+      padding: 10px 16px 16px;
+      max-height: 42vh;
+      overflow:auto;
+    }
+    #outputsBox .group{
+      margin-top: 12px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(120,190,255,0.12);
+      background: rgba(0,0,0,0.18);
+    }
+    #outputsBox .title{
+      font-weight: 700;
+      color: rgba(235,244,255,0.88);
+      font-size: 13px;
+      margin: 6px 0 8px;
+      letter-spacing: .2px;
+    }
+    #outputsBox .grid3{ display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #outputsBox .grid2{ display:grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    #outputsBox label{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      margin:0;
+      padding: 8px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.03);
+      font-size: 12px;
+      color: rgba(235,244,255,0.70);
+    }
+    input[type="checkbox"], input[type="radio"]{
+      accent-color: var(--accent);
+      width:16px;
+      height:16px;
+    }
+
+    /* ---------- Stats table ---------- */
+    #statsPanel{
+      padding: 4px 16px 16px;
+      overflow:auto;
+    }
+    .values-table .row{
+      display:grid !important;
+      grid-template-columns: 2.2fr 1fr 1fr 1fr 1fr;
+      gap: 10px;
+      align-items:center;
+      padding: 10px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .values-table .row:last-child{ border-bottom:none; }
+    .values-table .row b{
+      color: rgba(235,244,255,0.82);
+      font-weight: 700;
+    }
+    .values-table .row span,
+    .values-table .row b{
+      width:auto !important;  /* override inline widths ساخته‌شده توسط JS */
+      font-size: 12.5px;
+    }
+    .values-table i{
+      color: rgba(235,244,255,0.65);
+    }
+
+    /* ---------- Bar Chart panel ---------- */
+    .plot-wrap{
+      padding: 8px 16px 16px;
+      height:100%;
+    }
+    #chart_selected{
+      width:100% !important;
+      height: 420px !important;
+      background: rgba(0,0,0,0.14);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+    }
+
+    /* ---------- Viewer ---------- */
+    .viewer-toolbar{
+      padding: 14px 16px 10px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap: 12px;
+    }
+    .viewer-toolbar h2{
+      margin:0;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .plane-ctrl{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px 14px;
+      justify-content:flex-end;
+      margin-top: 2px;
+    }
+    .plane-ctrl label{
+      display:flex;
+      align-items:center;
+      gap: 8px;
+      margin:0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.18);
+      color: rgba(235,244,255,0.72);
+      font-size: 12px;
+      cursor:pointer;
+      user-select:none;
+    }
+
+    .viewer-surface{
+      position:relative;
+      padding: 8px 16px 16px;
+      flex: 1;
+      min-height: 520px;
+    }
+    #pose2d, #pose3d{
+      width:100%;
+      height:100%;
+      min-height: 520px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.42);
+      position:relative;
+      overflow: visible;
+    }
+    #pose3d{ display:none; }
+
+    .viewer-fullscreen{
+      position:absolute;
+      top: 18px;
+      right: 26px;
+      z-index:5;
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      border: 1px solid rgba(120,190,255,0.20);
+      background: rgba(0,0,0,0.28);
+      display:grid;
+      place-items:center;
+      color: rgba(235,244,255,0.85);
+      cursor:pointer;
+      transition:.16s ease;
+    }
+    .viewer-fullscreen:hover{
+      background: rgba(0,0,0,0.42);
+      box-shadow: 0 0 0 3px rgba(79,209,255,0.14);
+      transform: translateY(-1px);
+    }
+    .viewer-fullscreen svg{ width:18px;height:18px; }
+
+    /* ---------- Export panel ---------- */
+    #exportPanel{
+      padding: 10px 16px 16px;
+    }
+    #exportPanel h4{
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      font-weight: 800;
+      color: rgba(235,244,255,0.86);
+    }
+    #exportPanel .export-row{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
+      padding: 10px 10px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.18);
+      margin: 8px 0;
+    }
+    #exportPanel .export-row span{
+      color: rgba(235,244,255,0.72);
+      font-size: 12.5px;
+    }
+    #exportPanel .export-filename{
+      margin-top: 12px;
+      display:flex;
+      flex-direction:column;
+      gap: 6px;
+    }
+    #exportPanel .export-filename label{
+      margin:0;
+      font-weight: 700;
+      font-size: 12px;
+      color: rgba(235,244,255,0.65);
+    }
+    #exportPanel .export-filename input{
+      padding: 12px 12px;
+      border-radius: 14px;
+    }
+
+    #exportExcelBtn{
+      margin-top: 12px;
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(45,226,166,0.28);
+      background: linear-gradient(90deg, rgba(45,226,166,0.92), rgba(22, 174, 132, 0.92));
+      color: rgba(0,0,0,0.85);
+      font-weight: 900;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      box-shadow: 0 12px 30px rgba(45,226,166,0.12);
+      cursor:pointer;
+      transition: .16s ease;
+    }
+    #exportExcelBtn:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+    }
+
+    /* Scrollbars (اختیاری) */
+    ::-webkit-scrollbar{ width:10px; height:10px; }
+    ::-webkit-scrollbar-thumb{
+      background: rgba(120,190,255,0.18);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 999px;
+    }
+    ::-webkit-scrollbar-track{ background: rgba(0,0,0,0.15); }
+    #panel-stats{ min-height: 520px; }
+    #panel-bar{  min-height: 560px; }
+    #panel-viewer{ min-height: 660px; }
+    #panel-export{ min-height: 360px; }
+    #panel-stats, #panel-bar, #panel-viewer, #panel-export{
+      display:flex;
+      flex-direction:column;
+    }
+    #statsPanel{ flex:1; min-height:0; overflow:auto; }
+    .plot-wrap{ flex:1; min-height:0; }
+    #chart_selected{ height: 100% !important; min-height: 440px !important; }
+    .viewer-surface{ flex:1; min-height:0; }
+    #pose2d, #pose3d{ height:100%; min-height: 540px; }
+
+  </style>
+</head>
+
+<body>
+
+<header class="topbar panel">
+  <div class="brand">
+    <div class="brand__icon">
+      <img src="{% static 'images/sharif_icon256_white.png' %}" alt="Sharif University Logo" class="brand-logo">
+    </div>
+    <div class="brand__title">Lifting Simulation Dashboard</div>
+  </div>
+
+  <nav class="topbar__actions">
+    <a href="/logout/" class="btn-ghost"><span class="dot"></span>Logout</a>
+  </nav>
+</header>
+
+<main class="grid">
+
+  <!-- LEFT: Inputs + Outputs -->
+  <aside class="sidebar panel">
+    <div class="panel-head"><h2>Inputs</h2></div>
+
+    <form id="simForm">
+      <label>Body Height (cm)</label>
+      <input type="number" id="person_h" placeholder="170">
+
+      <label>Body Weight (kg)</label>
+      <input type="number" id="person_w" placeholder="70">
+
+      <label>Hand Load (kg)</label>
+      <input type="number" id="load_w" placeholder="5">
+
+      <label>Activity Type</label>
+      <select id="activity_type">
+        <option value="static" selected>Static</option>
+        <option value="dynamic">Dynamic</option>
+      </select>
+
+      <div class="row3">
+        <label>Load Coordinates – Origin (mm)</label>
+        <input type="number" id="org_x" placeholder="X">
+        <input type="number" id="org_y" placeholder="Y">
+        <input type="number" id="org_z" placeholder="Z">
+      </div>
+
+      <div class="row3" id="dest_wrap">
+        <label>Load Coordinates – Destination (mm) <small id="dest_hint" class="field-hint"></small></label>
+        <input type="number" id="dst_x" placeholder="X">
+        <input type="number" id="dst_y" placeholder="Y">
+        <input type="number" id="dst_z" placeholder="Z">
+      </div>
+
+      <label>Handling Technique</label>
+      <select id="handling_tech">
+        <option value="1">One-handed</option>
+        <option value="2">Two-handed</option>
+      </select>
+
+      <label>Lifting Technique</label>
+      <select id="lift_tech">
+        <option value="0">Standing</option>
+        <option value="1">Stoop</option>
+        <option value="2">Semi-Squat</option>
+        <option value="3">Full Squat</option>
+      </select>
+
+      <div id="errorBox"></div>
+      <button class="btn primary" type="submit">RUN</button>
+    </form>
+
+    <div class="divider"></div>
+
+    <div class="panel-head"><h2>Outputs</h2></div>
+
+    <div id="outputsBox">
+      <!-- GRF -->
+      <div class="group">
+        <div class="title">GRF – Right</div>
+        <div class="grid3">
+          <label><input type="checkbox" class="outchk" value="GRF_Right_X" checked> GRF_Right_X</label>
+          <label><input type="checkbox" class="outchk" value="GRF_Right_Y" checked> GRF_Right_Y</label>
+          <label><input type="checkbox" class="outchk" value="GRF_Right_Z" checked> GRF_Right_Z</label>
+        </div>
+        <div class="title" style="margin-top:10px">GRF – Left</div>
+        <div class="grid3">
+          <label><input type="checkbox" class="outchk" value="GRF_Left_X"> GRF_Left_X</label>
+          <label><input type="checkbox" class="outchk" value="GRF_Left_Y"> GRF_Left_Y</label>
+          <label><input type="checkbox" class="outchk" value="GRF_Left_Z"> GRF_Left_Z</label>
+        </div>
+      </div>
+
+      <!-- COP -->
+      <div class="group">
+        <div class="title">COP – Right</div>
+        <div class="grid2">
+          <label><input type="checkbox" class="outchk" value="COP_Right_X"> COP_Right_X</label>
+          <label><input type="checkbox" class="outchk" value="COP_Right_Y"> COP_Right_Y</label>
+        </div>
+        <div class="title" style="margin-top:10px">COP – Left</div>
+        <div class="grid2">
+          <label><input type="checkbox" class="outchk" value="COP_Left_X"> COP_Left_X</label>
+          <label><input type="checkbox" class="outchk" value="COP_Left_Y"> COP_Left_Y</label>
+        </div>
+      </div>
+
+      <!-- Spine -->
+      <div class="group">
+        <div class="title">Spine Forces</div>
+        <div class="grid3">
+          <label><input type="checkbox" class="outchk" value="T12L1_Shear_X"> T12L1_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="T12L1_Shear_Y"> T12L1_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="T12L1_Compression"> T12L1_Compression</label>
+
+          <label><input type="checkbox" class="outchk" value="L1L2_Shear_X"> L1L2_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="L1L2_Shear_Y"> L1L2_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="L1L2_Compression"> L1L2_Compression</label>
+
+          <label><input type="checkbox" class="outchk" value="L2L3_Shear_X"> L2L3_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="L2L3_Shear_Y"> L2L3_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="L2L3_Compression"> L2L3_Compression</label>
+
+          <label><input type="checkbox" class="outchk" value="L3L4_Shear_X"> L3L4_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="L3L4_Shear_Y"> L3L4_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="L3L4_Compression"> L3L4_Compression</label>
+
+          <label><input type="checkbox" class="outchk" value="L4L5_Shear_X"> L4L5_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="L4L5_Shear_Y"> L4L5_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="L4L5_Compression"> L4L5_Compression</label>
+
+          <label><input type="checkbox" class="outchk" value="L5S1_Shear_X"> L5S1_Shear_X</label>
+          <label><input type="checkbox" class="outchk" value="L5S1_Shear_Y"> L5S1_Shear_Y</label>
+          <label><input type="checkbox" class="outchk" value="L5S1_Compression"> L5S1_Compression</label>
+        </div>
+      </div>
+
+      <!-- Muscles -->
+      <div class="group">
+        <div class="title">Muscles</div>
+        <div class="grid2">
+          <label><input type="checkbox" class="outchk" value="MU_Right"> MU_Right</label>
+          <label><input type="checkbox" class="outchk" value="MU_Left"> MU_Left</label>
+          <label><input type="checkbox" class="outchk" value="ES_Right"> ES_Right</label>
+          <label><input type="checkbox" class="outchk" value="ES_Left"> ES_Left</label>
+          <label><input type="checkbox" class="outchk" value="OBL_Right"> OBL_Right</label>
+          <label><input type="checkbox" class="outchk" value="OBL_Left"> OBL_Left</label>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- CENTER: Stats -->
+  <section id="panel-stats" class="panel">
+    <div class="panel-head"><h2>Statistical Summary</h2></div>
+    <div id="statsPanel" class="values-table"><i>No data yet – run simulation first.</i></div>
+  </section>
+
+  <!-- RIGHT: Viewer -->
+  <section id="panel-viewer" class="panel">
+    <div class="viewer-toolbar">
+      <h2>Marker Viewer</h2>
+      <div class="plane-ctrl">
+        <label><input type="radio" name="plane" value="xz" checked> X–Z (back)</label>
+        <label><input type="radio" name="plane" value="xy"> X–Y (top)</label>
+        <label><input type="radio" name="plane" value="yz"> Y–Z (side)</label>
+        <label><input type="radio" name="plane" value="iso"> Isometric (3D)</label>
+      </div>
+    </div>
+
+    <div class="viewer-surface">
+      <button class="viewer-fullscreen" type="button" title="Fullscreen" aria-label="Fullscreen">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+
+      <canvas id="pose2d"></canvas>
+      <div id="pose3d"></div>
+    </div>
+  </section>
+  <div class="bottom-row">
+  <!-- CENTER: Chart -->
+      <section id="panel-bar" class="panel">
+      <div class="panel-head"><h2 id="chartTitle">Output Bar Chart</h2></div>
+      <div class="plot-wrap">
+        <canvas id="chart_selected"></canvas>
+      </div>
+    </section>
+
+  <!-- RIGHT: Export (مثل عکس) -->
+    <section id="panel-export" class="panel">
+      <div class="panel-head"><h2>Export</h2></div>
+
+      <div id="exportPanel">
+        <h4>Export options</h4>
+
+        <label class="export-row">
+          <span>Export selected</span>
+          <input type="checkbox" id="exp_selected" checked>
+        </label>
+
+        <label class="export-row">
+          <span>Export coordinate</span>
+          <input type="checkbox" id="exp_coords">
+        </label>
+
+        <label class="export-row">
+          <span>Export selected + coordinates</span>
+          <input type="checkbox" id="exp_sel_coords">
+        </label>
+
+        <label class="export-row">
+          <span>Export all</span>
+          <input type="checkbox" id="exp_all">
+        </label>
+
+        <div class="export-filename">
+          <label for="export_filename">File name</label>
+          <input type="text" id="export_filename" placeholder="results.xlsx">
+        </div>
+
+        <button type="button" id="exportExcelBtn">Export</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+<script>
+/* ---------- Chart global dark theme ---------- */
+if (window.Chart) {
+  Chart.defaults.color = 'rgba(235,244,255,0.86)';
+  Chart.defaults.borderColor = 'rgba(235,244,255,0.10)';
+  Chart.defaults.font.family = 'Inter, Segoe UI, sans-serif';
+}
+
+/* ---------- helpers & CSRF ---------- */
+const $ = id => document.getElementById(id);
+const activitySelect = $('activity_type'), destHint = $('dest_hint'), errorBox = $('errorBox');
+function showError(msg){ errorBox.style.display='block'; errorBox.textContent=msg; }
+function clearError(){ errorBox.style.display='none'; errorBox.textContent=''; }
+function toggleCoordsByActivity(){
+  const isStatic = activitySelect.value === 'static';
+  ['dst_x','dst_y','dst_z'].forEach(id=>{ const el=$(id); el.disabled=isStatic; el.classList.toggle('is-disabled',isStatic); });
+  destHint.textContent = isStatic ? '(disabled in Static mode)' : '';
+}
+activitySelect.addEventListener('change', toggleCoordsByActivity); toggleCoordsByActivity();
+
+function getCookie(name){
+  const v=document.cookie.split(';').map(s=>s.trim());
+  for(const c of v){ if(c.startsWith(name+'=')) return decodeURIComponent(c.split('=')[1]); }
+  return '';
+}
+async function postJSON(url, body){
+  const headers={'Content-Type':'application/json'};
+  const csrftoken=getCookie('csrftoken'); if(csrftoken) headers['X-CSRFToken']=csrftoken;
+  try{
+    const r=await fetch(url,{method:'POST',headers,body:JSON.stringify(body)});
+    const t=await r.text(); let data; try{data=JSON.parse(t)}catch(e){data={raw:t}};
+    return {ok:r.ok,status:r.status,data};
+  }catch(e){
+    showError('Network error'); return {ok:false,status:0,data:null};
+  }
+}
+
+/* 🔹 فقط یکی از چهار گزینه Export فعال باشد */
+const exportBoxes = ['exp_selected','exp_coords','exp_sel_coords','exp_all'].map(id => $(id));
+exportBoxes.forEach(box => {
+  box.addEventListener('change', function(){
+    if(this.checked){
+      exportBoxes.forEach(b => { if(b !== this) b.checked = false; });
+    }
+  });
+});
+
+/* ---------- mapping of scalar outputs ---------- */
+const DISCS=['T12L1','L1L2','L2L3','L3L4','L4L5','L5S1'];
+const MAP={
+  GRF_Right_X:{task:'GRF_X_Y',idx:0}, GRF_Left_X:{task:'GRF_X_Y',idx:1},
+  GRF_Right_Y:{task:'GRF_X_Y',idx:2}, GRF_Left_Y:{task:'GRF_X_Y',idx:3},
+  GRF_Right_Z:{task:'GRF_Z',idx:0},   GRF_Left_Z:{task:'GRF_Z',idx:1},
+  COP_Right_X:{task:'COP_X_Y',idx:0}, COP_Left_X:{task:'COP_X_Y',idx:1},
+  COP_Right_Y:{task:'COP_X_Y',idx:2}, COP_Left_Y:{task:'COP_X_Y',idx:3},
+  MU_Right:{task:'Muscle_MU',idx:0},  MU_Left:{task:'Muscle_MU',idx:1},
+  ES_Right:{task:'Muscle_ES',idx:0},  ES_Left:{task:'Muscle_ES',idx:1},
+  OBL_Right:{task:'Muscle_OBL',idx:0},OBL_Left:{task:'Muscle_OBL',idx:1},
+};
+DISCS.forEach((d,i)=>{ MAP[`${d}_Shear_X`]={task:'Spine_X',idx:i};
+                       MAP[`${d}_Shear_Y`]={task:'Spine_Y',idx:i};
+                       MAP[`${d}_Compression`]={task:'Spine_Z',idx:i}; });
+
+const ALL_LABELS = Object.keys(MAP);
+
+const arr=v=>Array.isArray(v)?v:[], num=v=>Number.isFinite(+v)?+v:null;
+function extractValue(label,R){
+  const m=MAP[label]; if(!m||!R) return null;
+  const ys=arr(R[m.task]); return num(ys[m.idx]);
+}
+function statsFor(val){
+  if(Array.isArray(val)){
+    const a=val.filter(x=>Number.isFinite(+x)).map(Number);
+    if(!a.length) return {min:null,max:null,mean:null,std:null};
+    const mean=a.reduce((s,x)=>s+x,0)/a.length, min=Math.min(...a), max=Math.max(...a);
+    const std=Math.sqrt(a.map(x=>(x-mean)**2).reduce((s,x)=>s+x,0)/a.length);
+    return {min,max,mean,std};
+  } else if(Number.isFinite(+val)){ const v=+val; return {min:v,max:v,mean:v,std:0}; }
+  return {min:null,max:null,mean:null,std:null};
+}
+
+/* ---------- chart & stats ---------- */
+let chSel=null, lastResults=null, lastDynamicFrames=null, isDynamic=false;
+const chartCanvas=$('chart_selected'), statsPanel=$('statsPanel'), chartTitle=$('chartTitle');
+
+function updateStatsAndChart(){
+  const keys=[...document.querySelectorAll('.outchk:checked')].map(e=>e.value);
+  if(isDynamic){
+    if(!lastDynamicFrames || !lastDynamicFrames.length){
+      statsPanel.innerHTML='<i>No data available for dynamic mode.</i>';
+      if(chSel){ chSel.destroy(); chSel=null; }
+      return;
+    }
+    chartTitle.textContent = 'Output vs Time (Dynamic)';
+    const nFrames = lastDynamicFrames.length;
+    const time = Array.from({length:nFrames}, (_,i)=>i); // frame index
+
+    if(chSel){ chSel.destroy(); chSel=null; }
+
+    const datasets=[];
+    let html='<div class="row"><b>Name</b><b>Min</b><b>Max</b><b>Mean</b><b>Std</b></div>';
+
+    keys.forEach(k=>{
+      const series = lastDynamicFrames.map(f=>extractValue(k, f.results)).filter(v=>v!=null);
+      if(!series.length) return;
+      datasets.push({
+        label: k,
+        data: series,
+        fill: false,
+        tension: 0.15,
+      });
+      const s = statsFor(series);
+      const f=x=>x==null?'-':(+x).toFixed(1);
+      html+=`<div class="row">
+        <span>${k}</span>
+        <span>${f(s.min)}</span>
+        <span>${f(s.max)}</span>
+        <span>${f(s.mean)}</span>
+        <span>${f(s.std)}</span>
+      </div>`;
+    });
+
+    if(!datasets.length){
+      statsPanel.innerHTML='<i>No outputs selected.</i>';
+      if(chSel){ chSel.destroy(); chSel=null; }
+      return;
+    }
+
+    chSel = new Chart(chartCanvas,{
+      type:'line',
+      data:{ labels: time, datasets },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        scales:{
+          x:{ grid:{color:'rgba(235,244,255,0.06)'}, ticks:{color:'rgba(235,244,255,0.75)'} },
+          y:{ grid:{color:'rgba(235,244,255,0.06)'}, ticks:{color:'rgba(235,244,255,0.75)'} }
+        },
+        plugins:{ legend:{ labels:{ color:'rgba(235,244,255,0.85)' } } }
+      }
+    });
+    statsPanel.innerHTML = html || '<i>No outputs selected.</i>';
+  } else {
+    chartTitle.textContent = 'Output Bar Chart';
+    if(!lastResults){
+      statsPanel.innerHTML='<i>No data available.</i>';
+      if(chSel){ chSel.destroy(); chSel=null; }
+      return;
+    }
+    const labels=[],values=[];
+    keys.forEach(k=>{const v=extractValue(k,lastResults); if(v!=null){labels.push(k); values.push(v);}});
+
+    if(chSel){ chSel.destroy(); chSel=null; }
+
+    if(labels.length){
+      chSel=new Chart(chartCanvas,{
+        type:'bar',
+        data:{
+          labels,
+          datasets:[{
+            label:'value',
+            data:values,
+            backgroundColor:'rgba(79,209,255,0.22)',
+            borderColor:'rgba(79,209,255,0.85)',
+            borderWidth:2,
+            borderRadius:10
+          }]
+        },
+        options:{
+          responsive:true,maintainAspectRatio:false,
+          scales:{
+            y:{
+              beginAtZero:true,
+              grid:{color:'rgba(235,244,255,0.06)'},
+              ticks:{color:'rgba(235,244,255,0.75)'}
+            },
+            x:{
+              grid:{display:false},
+              ticks:{color:'rgba(235,244,255,0.75)'}
+            }
+          },
+          plugins:{ legend:{ labels:{ color:'rgba(235,244,255,0.85)' } } }
+        }
+      });
+    }
+
+    let html='<div class="row"><b>Name</b><b>Min</b><b>Max</b><b>Mean</b><b>Std</b></div>';
+    keys.forEach(k=>{
+      const s=statsFor(extractValue(k,lastResults)); const f=x=>x==null?'-':(+x).toFixed(1);
+      html+=`<div class="row">
+        <span>${k}</span>
+        <span>${f(s.min)}</span>
+        <span>${f(s.max)}</span>
+        <span>${f(s.mean)}</span>
+        <span>${f(s.std)}</span>
+      </div>`;
+    });
+    statsPanel.innerHTML = html || '<i>No outputs selected.</i>';
+  }
+}
+$('outputsBox').addEventListener('change', ()=>{ if(lastResults || lastDynamicFrames) updateStatsAndChart(); });
+
+/* ---------- shared: markers rows (برای 2D/3D و Export Excel) ---------- */
+function groupXYZ(fields, values){
+  const rows=[]; for(let i=0;i+2<fields.length;i+=3){
+    rows.push({ name:String(fields[i]).replace(/[XYZ]$/,''), x:+values[i], y:+values[i+1], z:+values[i+2] });
+  } return rows;
+}
+function allMarkersAsArray(outputs){
+  const out=[];
+  ['Head','BP','Arms','Legs'].forEach(part=>{
+    const o=outputs?.[part]; if(!o) return;
+    groupXYZ(o.fields,o.values).forEach(r=> out.push({...r, part}));
+  });
+  return out;
+}
+
+/* ---------- 2D & 3D viewer ---------- */
+const poseCanvas=$('pose2d'); const ctx=poseCanvas.getContext('2d');
+let viewPlane='xz', lastMarkers=null, lastPayload=null;
+
+/* ---------- BONES (مثل MATLAB) ---------- */
+const BONE_PATHS = [
+  ["RFHD","LFHD","LBHD","RBHD","RFHD"],
+  ["C7","T10","S1","STRN","CLAV","C7"],
+  ["RWRA","RFIN","RWRB","RWRA","RFRM","RWRB","RFRM","RELB","RSHO","RUPA","RELB","RSHO","C7"],
+  ["LWRA","LFIN","LWRB","LWRA","LFRM","LWRB","LFRM","LELB","LSHO","LUPA","LELB","LSHO","C7"],
+  ["RPSI","RASI","S1","LASI","LPSI","S1","RPSI","RASI","LASI"],
+  ["RANK","RTOE","RHEE","RANK","RTIB","RKNE","RTHI","RASI","RKNE","RANK"],
+  ["LANK","LTOE","LHEE","LANK","LTIB","LKNE","LTHI","LASI","LKNE","LANK"],
+];
+
+document.querySelectorAll('input[name="plane"]').forEach(r=>{
+  r.addEventListener('change',()=>{
+    viewPlane=r.value;
+    if(viewPlane==='iso'){
+      poseCanvas.style.display='none';
+      $('pose3d').style.display='block';
+      ensure3D(); resize3D(); update3D(lastMarkers,lastPayload);
+    }else{
+      $('pose3d').style.display='none';
+      poseCanvas.style.display='block';
+      if(lastMarkers) draw2D(lastMarkers,lastPayload); else draw2D({},null);
+    }
+  });
+});
+
+function resizeCanvas(){ poseCanvas.width=poseCanvas.clientWidth; poseCanvas.height=poseCanvas.clientHeight; }
+window.addEventListener('resize', ()=>{
+  resizeCanvas();
+  if(viewPlane==='iso'){ resize3D(); update3D(lastMarkers,lastPayload); }
+  else if(lastMarkers){ draw2D(lastMarkers,lastPayload); }
+});
+resizeCanvas();
+
+function niceGrid(bg='#0b0b0b', major='#2a2a2a', minor='#1a1a1a'){
+  const w=poseCanvas.width,h=poseCanvas.height;
+  ctx.fillStyle=bg; ctx.fillRect(0,0,w,h);
+  const stepMinor=40, stepMajor=200;
+  ctx.strokeStyle=minor; ctx.lineWidth=1; ctx.beginPath();
+  for(let x=0;x<w;x+=stepMinor){ ctx.moveTo(x,0); ctx.lineTo(x,h); }
+  for(let y=0;y<h;y+=stepMinor){ ctx.moveTo(0,y); ctx.lineTo(w,y); }
+  ctx.stroke();
+  ctx.strokeStyle=major; ctx.lineWidth=1.2; ctx.beginPath();
+  for(let x=0;x<w;x+=stepMajor){ ctx.moveTo(x,0); ctx.lineTo(x,h); }
+  for(let y=0;y<h;y+=stepMajor){ ctx.moveTo(0,y); ctx.lineTo(w,y); }
+  ctx.stroke();
+}
+function markersDict(outputs){
+  const P=new Map();
+  ['Head','BP','Arms','Legs'].forEach(part=>{
+    const o=outputs?.[part]; if(!o) return;
+    groupXYZ(o.fields,o.values).forEach(r=> P.set(r.name.toUpperCase(), r));
+  }); return P;
+}
+function computeBounds(P, payload){
+  let xs=[], ys=[];
+  const pick=(r)=>{ if(viewPlane==='xz'){ xs.push(r.x); ys.push(r.z); }
+                    else if(viewPlane==='xy'){ xs.push(r.x); ys.push(r.y); }
+                    else { xs.push(r.y); ys.push(r.z); } };
+  P.forEach(r=>pick(r));
+  if(payload){ const r={x:payload.x,y:payload.y,z:payload.z}; pick(r); }
+  xs.push(0); ys.push(0);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  return {minX,maxX,minY,maxY};
+}
+function makeProject(bounds){
+  const w=poseCanvas.width, h=poseCanvas.height, pad=50;
+  let rx=bounds.maxX-bounds.minX || 1, ry=bounds.maxY-bounds.minY || 1;
+  const scale=Math.min((w-2*pad)/rx, (h-2*pad)/ry);
+  const sx=v => pad + (v - bounds.minX)*scale;
+  const sy=v => h - (pad + (v - bounds.minY)*scale);
+  return {sx, sy};
+}
+function drawArrow(x1,y1,x2,y2,color,label){
+  ctx.strokeStyle=color; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  const ang=Math.atan2(y2-y1, x2-x1), len=10;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len*Math.cos(ang - Math.PI/6), y2 - len*Math.sin(ang - Math.PI/6));
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - len*Math.cos(ang + Math.PI/6), y2 - len*Math.sin(ang + Math.PI/6));
+  ctx.stroke();
+  if(label){ ctx.fillStyle=color; ctx.font='12px Inter'; ctx.fillText(label, x2 + 6, y2 - 6); }
+}
+function drawAxes(project, bounds){
+  const x0=project.sx(0), y0=project.sy(0);
+  let hLabel='', vLabel='', hColor='', vColor='';
+  if(viewPlane==='xz'){ hLabel='x'; vLabel='z'; hColor='#ff3b30'; vColor='#0a84ff'; }
+  else if(viewPlane==='xy'){ hLabel='x'; vLabel='y'; hColor='#ff3b30'; vColor='#34c759'; }
+  else { hLabel='y'; vLabel='z'; hColor='#34c759'; vColor='#0a84ff'; }
+  const hx1=project.sx(bounds.minX), hx2=project.sx(bounds.maxX);
+  drawArrow(hx1, y0, hx2, y0, hColor, hLabel);
+  const vy1=project.sy(bounds.minY), vy2=project.sy(bounds.maxY);
+  drawArrow(x0, vy1, x0, vy2, vColor, vLabel);
+}
+function drawLoad(project, payload){
+  if(!payload) return;
+  let X,Y;
+  if(viewPlane==='xz'){ X=payload.x; Y=payload.z; }
+  else if(viewPlane==='xy'){ X=payload.x; Y=payload.y; }
+  else { X=payload.y; Y=payload.z; }
+  ctx.fillStyle='#ff4040'; ctx.beginPath(); ctx.arc(project.sx(X), project.sy(Y), 6, 0, Math.PI*2); ctx.fill();
+}
+function draw2D(outputs, payload){
+  niceGrid();
+  const P = markersDict(outputs);
+  const pts=[...P.values()];
+  const b=computeBounds(P, payload || {x:0,y:0,z:0});
+  const pr=makeProject(b);
+  drawAxes(pr, b);
+  drawLoad(pr, payload);
+  ctx.fillStyle='#79ff79'; ctx.globalAlpha=1;
+  pts.forEach(r=>{
+    let X,Y; if(viewPlane==='xz'){X=r.x;Y=r.z;} else if(viewPlane==='xy'){X=r.x;Y=r.y;} else {X=r.y;Y=r.z;}
+    ctx.beginPath(); ctx.arc(pr.sx(X), pr.sy(Y), 3.5, 0, Math.PI*2); ctx.fill();
+  });
+  drawBones2D(P, pr);
+}
+function drawBones2D(Pmap, pr){
+  ctx.save();
+  ctx.strokeStyle = '#77AC30';
+  ctx.lineWidth = 2;
+  ctx.globalAlpha = 0.95;
+
+  const get2D = (r) => {
+    let X, Y;
+    if(viewPlane==='xz'){ X=r.x; Y=r.z; }
+    else if(viewPlane==='xy'){ X=r.x; Y=r.y; }
+    else { X=r.y; Y=r.z; }
+    return { sx: pr.sx(X), sy: pr.sy(Y) };
+  };
+
+  for(const path of BONE_PATHS){
+    let started = false;
+    ctx.beginPath();
+
+    for(const name of path){
+      const r = Pmap.get(String(name).toUpperCase());
+      if(!r){ started = false; continue; }
+      const p = get2D(r);
+      if(!started){ ctx.moveTo(p.sx, p.sy); started = true; }
+      else{ ctx.lineTo(p.sx, p.sy); }
+    }
+    if(started) ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/* ---------- 3D viewer (Three.js + OrbitControls) ---------- */
+let threeReady=false, scene, camera, renderer, markerGroup, boneGroup, loadSphere, gridHelper, axesHelper, controls;
+
+function ensure3D(){
+  if(threeReady) return;
+  const container = $('pose3d');
+  const w = container.clientWidth || 600;
+  const h = container.clientHeight || 500;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0b0b0b);
+  scene.scale.x = -1;
+
+  camera = new THREE.PerspectiveCamera(55, w/h, 1, 20000);
+  camera.position.set(-2000, 2000, 2000);
+  camera.lookAt(0,0,0);
+
+  renderer = new THREE.WebGLRenderer({antialias:true});
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(window.devicePixelRatio || 1);
+  container.innerHTML='';
+  container.appendChild(renderer.domElement);
+
+  controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.05;
+  controls.enablePan = true;
+  controls.enableZoom = true;
+  controls.minDistance = 200;
+  controls.maxDistance = 8000;
+  controls.target.set(0, 800, 0);
+  controls.update();
+
+  const light = new THREE.AmbientLight(0xffffff, 0.7);
+  scene.add(light);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(2000, 4000, 2000);
+  scene.add(dirLight);
+
+  axesHelper = new THREE.AxesHelper(400);
+  scene.add(axesHelper);
+
+  gridHelper = new THREE.GridHelper(4000, 40, 0x444444, 0x222222);
+  gridHelper.position.y = 0;
+  scene.add(gridHelper);
+
+  markerGroup = new THREE.Group();
+  scene.add(markerGroup);
+
+  boneGroup = new THREE.Group();
+  scene.add(boneGroup);
+
+  const loadGeo = new THREE.SphereGeometry(20, 20, 20);
+  const loadMat = new THREE.MeshBasicMaterial({color:0xff4040});
+  loadSphere = new THREE.Mesh(loadGeo, loadMat);
+  loadSphere.visible = false;
+  scene.add(loadSphere);
+
+  threeReady = true;
+  animate3D();
+}
+function resize3D(){
+  if(!threeReady) return;
+  const c = $('pose3d');
+  const w=c.clientWidth || 600, h=c.clientHeight || 500;
+  renderer.setSize(w,h);
+  camera.aspect = w/h;
+  camera.updateProjectionMatrix();
+}
+function animate3D(){
+  if(!threeReady) return;
+  requestAnimationFrame(animate3D);
+  controls.update();
+  renderer.render(scene, camera);
+}
+function mmToScene(x){ return x; }
+
+function collectPoints3D(outputs, payload){
+  const pts = [];
+  const add = (x,y,z)=>{
+    if (Number.isFinite(x) && Number.isFinite(y) && Number.isFinite(z)){
+      pts.push(new THREE.Vector3(mmToScene(x), mmToScene(z), mmToScene(y)));
+    }
+  };
+  ['Head','BP','Arms','Legs'].forEach(part=>{
+    const o = outputs && outputs[part];
+    if (!o) return;
+    const rows = groupXYZ(o.fields, o.values);
+    rows.forEach(r => add(r.x, r.y, r.z));
+  });
+  if (payload) add(payload.x, payload.y, payload.z);
+  return pts;
+}
+function fitCameraToPoints(points){
+  if (!points.length) return;
+  const box = new THREE.Box3();
+  points.forEach(p => box.expandByPoint(p));
+  const size = new THREE.Vector3(), center = new THREE.Vector3();
+  box.getSize(size); box.getCenter(center);
+  const maxDim = Math.max(size.x, size.y, size.z) || 1000;
+  const dist = maxDim * 2.5;
+  camera.near = dist / 50;
+  camera.far = dist * 50;
+  camera.updateProjectionMatrix();
+  camera.position.set(center.x - dist, center.y + dist, center.z + dist);
+  controls.target.copy(center);
+  controls.update();
+}
+function clearGroup(g){
+  if(!g) return;
+  while(g.children.length) g.remove(g.children[0]);
+}
+function markerToVec3(r){
+  return new THREE.Vector3(mmToScene(r.x), mmToScene(r.z), mmToScene(r.y));
+}
+function drawBones3D(outputs){
+  if(!boneGroup || !outputs) return;
+  const Pmap = markersDict(outputs);
+
+  const boneMat = new THREE.LineBasicMaterial({
+    color: 0x77AC30,
+    transparent: true,
+    opacity: 0.95
+  });
+
+  for(const path of BONE_PATHS){
+    let segmentPts = [];
+
+    const flush = ()=>{
+      if(segmentPts.length >= 2){
+        const geom = new THREE.BufferGeometry().setFromPoints(segmentPts);
+        const line = new THREE.Line(geom, boneMat);
+        boneGroup.add(line);
+      }
+      segmentPts = [];
+    };
+
+    for(const name of path){
+      const r = Pmap.get(String(name).toUpperCase());
+      if(!r){ flush(); continue; }
+      segmentPts.push(markerToVec3(r));
+    }
+    flush();
+  }
+}
+function update3D(outputs, payload){
+  if(!threeReady) return;
+  clearGroup(markerGroup);
+  clearGroup(boneGroup);
+  if(!outputs){
+    loadSphere.visible = false;
+    return;
+  }
+
+  const parts=['Head','BP','Arms','Legs'];
+  const sphereGeo = new THREE.SphereGeometry(12, 16, 16);
+  const sphereMat = new THREE.MeshBasicMaterial({color:0x79ff79});
+
+  parts.forEach(part=>{
+    const o = outputs[part]; if(!o) return;
+    const rows = groupXYZ(o.fields, o.values);
+    rows.forEach(r=>{
+      const mesh = new THREE.Mesh(sphereGeo, sphereMat);
+      mesh.position.set(mmToScene(r.x), mmToScene(r.z), mmToScene(r.y));
+      markerGroup.add(mesh);
+    });
+  });
+  drawBones3D(outputs);
+
+  if(payload){
+    loadSphere.visible = true;
+    loadSphere.position.set(mmToScene(payload.x), mmToScene(payload.z), mmToScene(payload.y));
+  } else {
+    loadSphere.visible = false;
+  }
+
+  const pts = collectPoints3D(outputs, payload);
+  if (pts.length) fitCameraToPoints(pts);
+}
+
+/* ---------- submit (Static + Dynamic) ---------- */
+$('simForm').addEventListener('submit', async e=>{
+  e.preventDefault(); clearError();
+  const mode = activitySelect.value;
+
+  const basePayload = {
+    W:+$('person_w').value||70,
+    H:+$('person_h').value||170,
+    Load:+$('load_w').value||15,
+    Handling:+$('handling_tech').value,
+    Lifting:+$('lift_tech').value
+  };
+
+  if(mode === 'static'){
+    isDynamic = false;
+    lastDynamicFrames = null;
+
+    const payload={
+      x:+$('org_x').value||0,
+      y:+$('org_y').value||0,
+      z:+$('org_z').value||0,
+      ...basePayload
+    };
+
+    const res = await postJSON('/api/predict_all/', payload);
+    if(!(res.ok && res.data && res.data.ok)){
+      console.error(res);
+      showError('API error in /api/predict_all/ (static)');
+      return;
+    }
+    lastResults = res.data.results;
+    updateStatsAndChart();
+
+    const resM = await postJSON('/api/predict_markers/', payload);
+    if(resM.ok && resM.data && resM.data.ok){
+      lastMarkers = resM.data.outputs;
+      lastPayload = payload;
+      if(viewPlane==='iso'){ ensure3D(); resize3D(); update3D(lastMarkers,lastPayload); }
+      else { draw2D(lastMarkers, lastPayload); }
+    }else{
+      lastMarkers=null;
+      lastPayload=null;
+      if(viewPlane==='iso'){ ensure3D(); update3D(null,null); } else { draw2D({},null); }
+    }
+
+  } else {
+    isDynamic = true;
+    lastResults = null;
+
+    const payloadDyn = {
+      x:+$('org_x').value||0,
+      y:+$('org_y').value||0,
+      z:+$('org_z').value||0,
+      dst_x:+$('dst_x').value||0,
+      dst_y:+$('dst_y').value||0,
+      dst_z:+$('dst_z').value||0,
+      ...basePayload
+    };
+
+    const resD = await postJSON('/api/predict_dynamic/', payloadDyn);
+    if(!(resD.ok && resD.data && resD.data.ok)){
+      console.error(resD);
+      showError('API error in /api/predict_dynamic/');
+      return;
+    }
+    lastDynamicFrames = resD.data.frames || [];
+    updateStatsAndChart();
+
+    if(lastDynamicFrames.length){
+      const lf = lastDynamicFrames[lastDynamicFrames.length-1];
+      lastMarkers = lf.markers;
+      lastPayload = {x:lf.x, y:lf.y, z:lf.z};
+      if(viewPlane==='iso'){ ensure3D(); resize3D(); update3D(lastMarkers,lastPayload); }
+      else { draw2D(lastMarkers,lastPayload); }
+    }else{
+      lastMarkers=null;
+      lastPayload=null;
+      if(viewPlane==='iso'){ ensure3D(); update3D(null,null); } else { draw2D({},null); }
+    }
+  }
+});
+
+/* ---------- Export to Excel (Static only) ---------- */
+$('exportExcelBtn').addEventListener('click', ()=>{
+
+  if(isDynamic){
+    alert('Export is only for Static mode.');
+    return;
+  }
+  if(!lastResults || !Object.keys(lastResults).length){
+    alert('No static results available. Run Static simulation first.');
+    return;
+  }
+
+  const sel       = $('exp_selected').checked;
+  const coords    = $('exp_coords').checked;
+  const selCoords = $('exp_sel_coords').checked;
+  const all       = $('exp_all').checked;
+
+  if(!sel && !coords && !selCoords && !all){
+    alert('Please select one export option.');
+    return;
+  }
+
+  const rows = [["Name","Value"]];
+
+  if(sel || selCoords){
+    const labelsForOutputs = [...document.querySelectorAll('.outchk:checked')].map(e=>e.value);
+    labelsForOutputs.forEach(label=>{
+      const val = extractValue(label, lastResults);
+      if(val != null) rows.push([label, val]);
+    });
+  }
+
+  if((coords || selCoords || all) && lastMarkers){
+    const markers = allMarkersAsArray(lastMarkers);
+    markers.forEach(r=>{
+      rows.push([`${r.name}_X`, r.x]);
+      rows.push([`${r.name}_Y`, r.y]);
+      rows.push([`${r.name}_Z`, r.z]);
+    });
+  }
+
+  if(all){
+    ALL_LABELS.forEach(label=>{
+      const val = extractValue(label, lastResults);
+      if(val != null) rows.push([label, val]);
+    });
+  }
+
+  if(rows.length <= 1){
+    alert('Nothing to export.');
+    return;
+  }
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  XLSX.utils.book_append_sheet(wb, ws, "Results");
+
+  let fname = $('export_filename').value.trim();
+  if(!fname) fname = 'results.xlsx';
+  if(!fname.toLowerCase().endsWith('.xlsx')) fname += '.xlsx';
+
+  XLSX.writeFile(wb, fname);
+});
+
+/* ---------- Fullscreen button (اختیاری ولی شبیه عکس) ---------- */
+document.querySelector('.viewer-fullscreen')?.addEventListener('click', async ()=>{
+  const target = (viewPlane === 'iso') ? $('pose3d') : $('pose2d');
+  try{
+    if(!document.fullscreenElement) await target.requestFullscreen();
+    else await document.exitFullscreen();
+  }catch(e){}
+});
+
+/* boot: empty draw */
+draw2D({}, null);
+/* حداقل ارتفاع منطقی برای پنل‌ها */
+
+
+</script>
+
+</body>
+</html>

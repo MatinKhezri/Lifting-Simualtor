@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+
+# Virtualenv
+venv/
+.env
+.venv/
+
+# Django
+db.sqlite3
+*.log
+staticfiles/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML / big files (optional)
+*.pt
+*.pth
+*.onnx
+*.pkl
+*.h5
+*.npz
+*.npy
